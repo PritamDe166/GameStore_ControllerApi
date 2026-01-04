@@ -1,0 +1,10 @@
+﻿global using System.ComponentModel.DataAnnotations;
+global using FluentValidation;
+global using GameStoreControllerApi.CustomValidations;
+global using GameStoreControllerApi.Data;
+global using GameStoreControllerApi.Dto.Game;
+global using GameStoreControllerApi.Entities;
+global using GameStoreControllerApi.Infrastructure.ExceptionHandling;
+global using GameStoreControllerApi.Mappings;
+global using Microsoft.AspNetCore.Mvc;
+global using Microsoft.EntityFrameworkCore;

@@ -1,0 +1,24 @@
+﻿GET http://localhost:5138/api/game
+
+
+### Get by Id
+GET http://localhost:5138/api/game/1
+
+
+### Get by Name
+GET http://localhost:5138/api/game/_searchByName?name=FIFA%20201
+
+
+### POST
+POST http://localhost:5138/api/game
+Content-Type: application/json
+{
+    "name": "",
+    "genreId": 2,
+    "price": 19.99,
+    "releaseDate": "2027-02-02"
+}
+
+
+### Delete Games
+DELETE http://localhost:5138/api/game/6
