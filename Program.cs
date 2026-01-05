@@ -1,24 +1,30 @@
 
 var builder = WebApplication.CreateBuilder(args);
 
-//Adding Services
-var conString = builder.Configuration.GetConnectionString("GameStore");
-builder.Services.AddSqlite<GameStoreContext>(conString);
+// Infrastructure
+var connectionString = builder.Configuration.GetConnectionString("GameStore");
+builder.Services.AddSqlite<GameStoreContext>(connectionString);
 
-//Adding Controllers
+// Application Services
+builder.Services.AddScoped<IGameService, GameService>();
+
+// MVC / API
 builder.Services.AddControllers();
 
+// Validation & Error Handling
 builder.Services.AddValidatorsFromAssemblyContaining<CreateGameValidatorServiceValidations>();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 
-
 var app = builder.Build();
 
+// Middleware Pipeline
 app.UseExceptionHandler();
 
-//mapping controllers
 app.MapControllers();
 
+// Startup Tasks
 app.MigrateDb();
+
 app.Run();
+

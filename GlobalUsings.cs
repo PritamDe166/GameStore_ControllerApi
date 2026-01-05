@@ -6,5 +6,6 @@ global using GameStoreControllerApi.Dto.Game;
 global using GameStoreControllerApi.Entities;
 global using GameStoreControllerApi.Infrastructure.ExceptionHandling;
 global using GameStoreControllerApi.Mappings;
+global using GameStoreControllerApi.Services.Games;
 global using Microsoft.AspNetCore.Mvc;
 global using Microsoft.EntityFrameworkCore;
