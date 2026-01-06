@@ -13,12 +13,12 @@ GET http://localhost:5138/api/game/_searchByName?name=FIFA%20201
 POST http://localhost:5138/api/game
 Content-Type: application/json
 {
-    "name": "",
-    "genreId": 2,
+    "name": "Asphalt",
+    "genreId": 6,
     "price": 19.99,
-    "releaseDate": "2027-02-02"
+    "releaseDate": "2020-10-15"
 }
 
 
 ### Delete Games
-DELETE http://localhost:5138/api/game/6
+DELETE http://localhost:5138/api/game/1

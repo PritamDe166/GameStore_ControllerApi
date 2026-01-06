@@ -5,48 +5,39 @@ namespace GameStoreControllerApi.Controllers;
 [ApiController]
 public class GameController : ControllerBase
 {
-    public readonly GameStoreContext _dbContext;
+    public readonly IGameService _gameService;
 
-    public GameController(GameStoreContext dbContext)
+    public GameController(IGameService gameService)
     {
-        _dbContext = dbContext;
+        _gameService = gameService;
     }
 
     [HttpGet]
     public async Task<ActionResult<List<GetGamesDto>>> GetGames()
     {
-        var games = await _dbContext.games
-                                    .Include(g => g.Genre)
-                                    .Select(g => g.EntityToDto())
-                                    .ToListAsync();
+        var games = await _gameService.GetAllGamesAsync();
         return Ok(games);
     }
 
     [HttpGet("{id:int}" , Name = "GetById")]
     public async Task<ActionResult<GetGamesDto>> GetGameById(int id)
     {
-        var game = await _dbContext.games
-                                   .Include(g => g.Genre)
-                                   .Where(g => g.Id == id)
-                                   .Select(g => g.EntityToDto())
-                                   .FirstOrDefaultAsync();
+        var game = await _gameService.GetGameByIdAsync(id);
+
         if (game == null)
         {
             return NotFound();
         }
+
         return Ok(game);
     }
 
     [HttpGet("_searchByName")]
     public async Task<ActionResult<List<GetGamesDto>>> GetGamesbyName([FromQuery] string name)
     {
-        var games = await _dbContext.games
-                                    .Include(g => g.Genre)
-                                    .Where(g => g.Name == name)
-                                    .Select(g => g.EntityToDto())
-                                    .ToListAsync();
+        var games = await _gameService.GetGamesByNameAsync(name);
 
-        if(games.Contains(null) || games.Count == 0)
+        if (games.Count == 0)
         {
             return NotFound();
         }
@@ -55,27 +46,21 @@ public class GameController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<GetGamesDto>> CreateNewGame([FromBody] CreateGameDto newGame, [FromServices] IValidator<CreateGameDto> validator)
+    public async Task<ActionResult<GetGamesDto>> CreateNewGame([FromBody] CreateGameDto newGame)
     {
-        await validator.ValidateOrThrowAsync(newGame); //Validation
-
-        Game game = newGame.DtoToEntity();
-        game.Genre = await _dbContext.genres.FindAsync(newGame.GenreId);
-        _dbContext.games.Add(game);
-        await _dbContext.SaveChangesAsync();
-        return CreatedAtRoute("GetById", new { id = game.Id }, game.EntityToDto());
+        var createdGame = await _gameService.CreateGameAsync(newGame);
+        return CreatedAtRoute("GetById", new { id = createdGame.Id}, createdGame);
     }
 
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> DeleteGame(int id)
     {
-        var game = await _dbContext.games.FindAsync(id);
-        if (game == null)
+        var isDeleted = await _gameService.DeleteGameAsync(id);
+        if (isDeleted == false)
         {
             return NotFound();
         }
-        _dbContext.games.Remove(game);
-        await _dbContext.SaveChangesAsync();
+        
         return NoContent();
     }
 }
