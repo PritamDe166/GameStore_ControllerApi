@@ -9,4 +9,6 @@ public interface IGameRepository
     Task CreateAsync(Entity.Game game);
     Task UpdateAsync(Entity.Game game);
     Task DeleteAsync(Entity.Game game);
+
+    Task<(List<Entity.Game> Items, int TotalCount)> GetPagedAsync(int skip, int take);
 }

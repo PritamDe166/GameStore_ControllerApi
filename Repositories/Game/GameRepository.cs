@@ -50,4 +50,20 @@ public class GameRepository : IGameRepository
     {
         await _dbContext.SaveChangesAsync();
     }
+
+    public async Task<(List<Entities.Game> Items, int TotalCount)> GetPagedAsync(int skip, int take)
+    {
+        var query = _dbContext.games
+            .Include(g => g.Genre)
+            .AsNoTracking();
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync();
+
+        return (items, totalCount);
+    }
 }

@@ -1,7 +1,5 @@
 ﻿
-using System.ComponentModel.DataAnnotations;
-using GameStoreControllerApi.Repositories.Genre;
-using GameStoreControllerApi.Services.Validation;
+using GameStoreControllerApi.Dto.Contracts.Pagination;
 
 namespace GameStoreControllerApi.Services.Games;
 
@@ -26,7 +24,7 @@ public class GameService : IGameService
 
     public async Task<GetGamesDto?> GetGameByIdAsync(int id)
     {
-        var game = await _gameRepository.GetByIdAsync(id);
+        var game = await _gameRepository.GetByIdAsync(id) ?? throw new NotFoundException("game", id);
         return game?.EntityToDto();
     }
 
@@ -40,11 +38,7 @@ public class GameService : IGameService
     {
         await _validationService.ValidateAsync(newGame);
 
-        var genre = await _genreRepository.GetByIdAsync(newGame.GenreId);
-        if (genre == null)
-        {
-            throw new FluentValidation.ValidationException("Invalid GenreId.");
-        }
+        var genre = await _genreRepository.GetByIdAsync(newGame.GenreId) ?? throw new NotFoundException("Genre", newGame.GenreId);
 
         var game = newGame.DtoToEntity();
         game.Genre = genre;
@@ -70,8 +64,8 @@ public class GameService : IGameService
     {
         await _validationService.ValidateAsync(updatedGame);
 
-        var game = await _gameRepository.GetByIdAsync(id) ?? throw new KeyNotFoundException("Game not found.");
-        var genre = await _genreRepository.GetByIdAsync(updatedGame.GenreId) ?? throw new KeyNotFoundException("GenreId is Invalid");
+        var game = await _gameRepository.GetByIdAsync(id) ?? throw new NotFoundException("Game", id);
+        var genre = await _genreRepository.GetByIdAsync(updatedGame.GenreId) ?? throw new NotFoundException("Genre", updatedGame.GenreId);
 
         game.Name = updatedGame.Name;
         game.Genre = genre;
@@ -80,5 +74,19 @@ public class GameService : IGameService
         
         await _gameRepository.UpdateAsync(game);
         return game.EntityToDto();
+    }
+
+    public async Task<PaginationResponse<GetGamesDto>> GetPagedGamesAsync(PaginationRequest paginationRequest)
+    {
+        var (games, totalCount) = await _gameRepository.GetPagedAsync(paginationRequest.Skip, paginationRequest.PageSize);
+        var items = games.Select(g => g.EntityToDto()).ToList();
+        
+        return new PaginationResponse<GetGamesDto>
+        {
+            Items = items,
+            PageNumber = paginationRequest.PageNumber,
+            PageSize = paginationRequest.PageSize,
+            TotalCount = totalCount
+        };
     }
 }

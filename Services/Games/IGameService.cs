@@ -1,4 +1,6 @@
-﻿namespace GameStoreControllerApi.Services.Games;
+﻿using GameStoreControllerApi.Dto.Contracts.Pagination;
+
+namespace GameStoreControllerApi.Services.Games;
 
 public interface IGameService
 {
@@ -8,4 +10,6 @@ public interface IGameService
     Task<GetGamesDto> CreateGameAsync(CreateGameDto newGame);
     Task<GetGamesDto> UpdateGameAsync(int id, UpdateGameDto updatedGame);
     Task<bool> DeleteGameAsync(int id);
+
+    Task<PaginationResponse<GetGamesDto>> GetPagedGamesAsync(PaginationRequest paginationRequest);
 }

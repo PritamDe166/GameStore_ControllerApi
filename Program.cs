@@ -1,7 +1,4 @@
 
-
-using GameStoreControllerApi.Services.Validation;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Infrastructure

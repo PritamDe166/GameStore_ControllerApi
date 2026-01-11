@@ -1,4 +1,6 @@
 ﻿
+using GameStoreControllerApi.Dto.Contracts.Pagination;
+
 namespace GameStoreControllerApi.Controllers;
 
 [Route("api/[controller]")]
@@ -13,10 +15,10 @@ public class GameController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<GetGamesDto>>> GetGames()
+    public async Task<ActionResult<PaginationResponse<GetGamesDto>>> GetGamesPaged([FromQuery] PaginationRequest paginationRequest)
     {
-        var games = await _gameService.GetAllGamesAsync();
-        return Ok(games);
+        var pagedGames = await _gameService.GetPagedGamesAsync(paginationRequest);
+        return Ok(pagedGames);
     }
 
     [HttpGet("{id:int}" , Name = "GetById")]
@@ -52,14 +54,18 @@ public class GameController : ControllerBase
         return CreatedAtRoute("GetById", new { id = createdGame.Id}, createdGame);
     }
 
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult> UpdateGame([FromRoute] int id, [FromBody] UpdateGameDto updatedGame)
+    {
+        await _gameService.UpdateGameAsync(id, updatedGame);
+        
+        return NoContent();
+    }
+
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> DeleteGame(int id)
     {
-        var isDeleted = await _gameService.DeleteGameAsync(id);
-        if (isDeleted == false)
-        {
-            return NotFound();
-        }
+        await _gameService.DeleteGameAsync(id);
         
         return NoContent();
     }

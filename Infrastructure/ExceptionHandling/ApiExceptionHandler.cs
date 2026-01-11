@@ -19,24 +19,90 @@ public sealed class ApiExceptionHandler : IExceptionHandler
         Exception exception,
         CancellationToken cancellationToken)
     {
-        // Don’t log ValidationException as Error (it’s expected).
-        if (exception is not ValidationException)
-        {
-            _logger.LogError(exception, "Unhandled exception: {Message}", exception.Message);
-        }
+        LogException(exception);
 
         ProblemDetails problem = exception switch
         {
-            ValidationException ve => CreateValidationProblem(context, ve),
-            _ => CreateServerErrorProblem(context)
+            ValidationException ve =>
+                CreateValidationProblem(context, ve),
+
+            NotFoundException knf =>
+                CreateProblem(
+                    context,
+                    StatusCodes.Status404NotFound,
+                    "Resource not found.",
+                    knf.Message),
+
+            UnauthorizedAccessException ua =>
+                CreateProblem(
+                    context,
+                    StatusCodes.Status403Forbidden,
+                    "Access denied.",
+                    ua.Message),
+
+            InvalidOperationException ioe =>
+                CreateProblem(
+                    context,
+                    StatusCodes.Status409Conflict,
+                    "Operation not allowed.",
+                    ioe.Message),
+
+            BusinessRuleException be =>
+                CreateProblem(
+                    context,
+                    StatusCodes.Status406NotAcceptable,
+                    "Business Rule  Violated.",
+                    be.Message),
+
+            _ =>
+                CreateServerErrorProblem(context)
         };
 
-        context.Response.StatusCode = problem.Status ?? StatusCodes.Status500InternalServerError;
+        context.Response.StatusCode =
+            problem.Status ?? StatusCodes.Status500InternalServerError;
+
         context.Response.ContentType = "application/problem+json";
 
         await context.Response.WriteAsJsonAsync(problem, cancellationToken);
         return true;
     }
+
+    // ---------------- Logging ----------------
+
+    private void LogException(Exception exception)
+    {
+        switch (exception)
+        {
+            case ValidationException:
+                // Expected client error — no logging
+                break;
+
+            case KeyNotFoundException:
+            case UnauthorizedAccessException:
+            case InvalidOperationException:
+                _logger.LogWarning(exception, exception.Message);
+                break;
+
+            default:
+                _logger.LogError(exception, "Unhandled exception: {Message}", exception.Message);
+                break;
+        }
+    }
+
+    // ---------------- ProblemDetails Builders ----------------
+
+    private static ProblemDetails CreateProblem(
+        HttpContext context,
+        int statusCode,
+        string title,
+        string detail)
+        => new ProblemDetails
+        {
+            Status = statusCode,
+            Title = title,
+            Detail = detail,
+            Instance = context.Request.Path
+        };
 
     private static ProblemDetails CreateServerErrorProblem(HttpContext context)
         => new ProblemDetails
@@ -47,9 +113,10 @@ public sealed class ApiExceptionHandler : IExceptionHandler
             Instance = context.Request.Path
         };
 
-    private static ValidationProblemDetails CreateValidationProblem(HttpContext context, ValidationException ex)
+    private static ValidationProblemDetails CreateValidationProblem(
+        HttpContext context,
+        ValidationException ex)
     {
-        // Standard ASP.NET validation dictionary (messages)
         var errors = ex.Errors
             .GroupBy(e => e.PropertyName)
             .ToDictionary(
@@ -64,14 +131,16 @@ public sealed class ApiExceptionHandler : IExceptionHandler
             Instance = context.Request.Path
         };
 
-        // Enterprise add-on: stable codes for clients (no string comparisons)
+        // Enterprise-friendly structured error details
         var coded = ex.Errors
             .GroupBy(e => e.PropertyName)
             .ToDictionary(
                 g => g.Key,
                 g => g.Select(e => new
                 {
-                    code = string.IsNullOrWhiteSpace(e.ErrorCode) ? "VALIDATION_ERROR" : e.ErrorCode,
+                    code = string.IsNullOrWhiteSpace(e.ErrorCode)
+                        ? "VALIDATION_ERROR"
+                        : e.ErrorCode,
                     message = e.ErrorMessage
                 }).ToArray()
             );
@@ -81,3 +150,4 @@ public sealed class ApiExceptionHandler : IExceptionHandler
         return problem;
     }
 }
+
